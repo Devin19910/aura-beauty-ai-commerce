@@ -119,13 +119,49 @@ class MockValidationAgent:
         }
 
 
+class MockScoringAgent:
+    """Mock Scoring Agent for E2E testing"""
+
+    def execute(self, products_validated: List[Dict[str, Any]]) -> Dict[str, Any]:
+        ranked_products = []
+
+        for product_data in products_validated:
+            score = (
+                product_data.get("net_margin_pct", 30) / 100 * 40
+                + 85 / 100 * 35
+                + 75 / 100 * 25
+            )
+
+            ranked_products.append(
+                {
+                    "product_name": product_data.get("product_name"),
+                    "composite_score": round(score, 1),
+                    "tier": "TIER_1_PRIORITY" if score > 75 else "TIER_2_HIGH",
+                    "final_rank": 0,
+                }
+            )
+
+        ranked_products = sorted(
+            ranked_products, key=lambda x: x["composite_score"], reverse=True
+        )
+
+        for rank, product in enumerate(ranked_products, 1):
+            product["final_rank"] = rank
+
+        return {
+            "ranked_products": ranked_products,
+            "total_products": len(ranked_products),
+        }
+
+
 class E2EPipelineOrchestrator:
-    """Orchestrates end-to-end pipeline: Research -> Supplier -> Validation"""
+    """Orchestrates end-to-end pipeline: Research -> Supplier -> Validation -> Scoring"""
 
     def __init__(self):
         self.research_agent = MockResearchAgent()
         self.supplier_agent = MockSupplierAgent()
         self.validation_agent = MockValidationAgent()
+        self.scoring_agent = MockScoringAgent()
         self.pipeline_results = {}
 
     def run_pipeline(self) -> Dict[str, Any]:
@@ -157,16 +193,27 @@ class E2EPipelineOrchestrator:
             f"[OK] Validated {len(validation_results['validation_results'])} products (Approval rate: {validation_results['approval_rate']}%)"
         )
 
+        # Stage 4: Scoring Agent
+        print("\n[STAGE 4] Running Scoring Agent...")
+        scoring_results = self.scoring_agent.execute(
+            validation_results["validation_results"]
+        )
+        print(
+            f"[OK] Scored and ranked {len(scoring_results['ranked_products'])} products"
+        )
+
         # Aggregate results
         self.pipeline_results = {
             "stage_1_research": research_results,
             "stage_2_supplier": supplier_results,
             "stage_3_validation": validation_results,
+            "stage_4_scoring": scoring_results,
             "pipeline_status": "success",
             "products_discovered": research_results["total_found"],
             "suppliers_found": supplier_results["total_suppliers"],
             "products_approved": validation_results["approved"],
             "approval_rate": validation_results["approval_rate"],
+            "products_ranked": len(scoring_results["ranked_products"]),
         }
 
         return self.pipeline_results
@@ -196,6 +243,7 @@ class E2EPipelineOrchestrator:
         research = self.pipeline_results["stage_1_research"]
         supplier = self.pipeline_results["stage_2_supplier"]
         validation = self.pipeline_results["stage_3_validation"]
+        scoring = self.pipeline_results["stage_4_scoring"]
 
         print("[STAGE 1: PRODUCT DISCOVERY]")
         print(f"Products Found: {research['total_found']}")
@@ -240,6 +288,17 @@ class E2EPipelineOrchestrator:
             )
         print()
 
+        print("[STAGE 4: PRODUCT SCORING & RANKING]")
+        print(f"Products Ranked: {len(scoring['ranked_products'])}\n")
+
+        for result in scoring["ranked_products"]:
+            rank = result["final_rank"]
+            score = result["composite_score"]
+            tier = result["tier"].replace("_", " ")
+            print(f"  #{rank} [{score}/100] {tier}")
+            print(f"     {result['product_name']}")
+        print()
+
         print("=" * 80)
         print("PIPELINE SUMMARY")
         print(f"Total Products Analyzed: {self.pipeline_results['products_discovered']}")
@@ -249,6 +308,7 @@ class E2EPipelineOrchestrator:
         )
         print(f"Products Approved: {self.pipeline_results['products_approved']}")
         print(f"Approval Rate: {self.pipeline_results['approval_rate']}%")
+        print(f"Products Ranked: {self.pipeline_results['products_ranked']}")
         print(f"Pipeline Status: {self.pipeline_results['pipeline_status'].upper()}")
         print("=" * 80 + "\n")
 
@@ -272,16 +332,16 @@ def main():
         orchestrator.display_results()
 
         # Summary
-        print("[SUCCESS] End-to-End Pipeline Test Passed!")
-        print(f"  - Stage 1 (Research): {orchestrator.pipeline_results['stage_1_research']['total_found']} products")
+        print("[SUCCESS] End-to-End 4-Stage Pipeline Test Passed!")
+        print(f"  - Stage 1 (Research): {orchestrator.pipeline_results['stage_1_research']['total_found']} products discovered")
         print(
-            f"  - Stage 2 (Supplier): {orchestrator.pipeline_results['stage_2_supplier']['total_suppliers']} suppliers"
+            f"  - Stage 2 (Supplier): {orchestrator.pipeline_results['stage_2_supplier']['total_suppliers']} suppliers found"
         )
         print(
-            f"  - Stage 3 (Validation): {orchestrator.pipeline_results['products_approved']} approved"
+            f"  - Stage 3 (Validation): {orchestrator.pipeline_results['products_approved']} approved ({orchestrator.pipeline_results['approval_rate']}%)"
         )
-        print(f"  - Approval Rate: {orchestrator.pipeline_results['approval_rate']}%")
-        print(f"  - Pipeline Status: OK\n")
+        print(f"  - Stage 4 (Scoring): {orchestrator.pipeline_results['products_ranked']} ranked by opportunity")
+        print(f"  - Pipeline Status: COMPLETE [OK]\n")
 
         return True
 
