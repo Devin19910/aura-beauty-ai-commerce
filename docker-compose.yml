@@ -1,0 +1,200 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: aura-db
+    environment:
+      POSTGRES_USER: aura_user
+      POSTGRES_PASSWORD: aura_password
+      POSTGRES_DB: aura_beauty_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Note: We use Alembic migrations instead of init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aura_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aura_network
+
+  # Redis Cache & Message Broker
+  cache:
+    image: redis:7-alpine
+    container_name: aura-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aura_network
+
+  # Meilisearch (Product Search)
+  meilisearch:
+    image: getmeili/meilisearch:v1.7
+    container_name: aura-meilisearch
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-aura_master_key_dev}
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aura_network
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aura-backend
+    environment:
+      DATABASE_URL: postgresql://aura_user:aura_password@db:5432/aura_beauty_db
+      REDIS_URL: redis://cache:6379
+      MEILISEARCH_URL: http://meilisearch:7700
+      MEILISEARCH_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-aura_master_key_dev}
+      SECRET_KEY: ${SECRET_KEY:-dev_secret_key_change_in_production}
+      ENVIRONMENT: development
+      DEBUG: "True"
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - aura_network
+
+  # Celery Worker (Background Tasks)
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aura-celery-worker
+    environment:
+      DATABASE_URL: postgresql://aura_user:aura_password@db:5432/aura_beauty_db
+      REDIS_URL: redis://cache:6379
+      CELERY_BROKER_URL: redis://cache:6379/0
+      CELERY_RESULT_BACKEND: redis://cache:6379/1
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
+    volumes:
+      - ./backend:/app
+      - ./logs:/app/logs
+    depends_on:
+      - db
+      - cache
+      - backend
+    command: celery -A app.tasks worker --loglevel=info
+    networks:
+      - aura_network
+
+  # Celery Beat (Task Scheduler)
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aura-celery-beat
+    environment:
+      DATABASE_URL: postgresql://aura_user:aura_password@db:5432/aura_beauty_db
+      REDIS_URL: redis://cache:6379
+      CELERY_BROKER_URL: redis://cache:6379/0
+      CELERY_RESULT_BACKEND: redis://cache:6379/1
+    volumes:
+      - ./backend:/app
+      - ./logs:/app/logs
+    depends_on:
+      - db
+      - cache
+      - backend
+    command: celery -A app.tasks beat --loglevel=info
+    networks:
+      - aura_network
+
+  # Nginx Reverse Proxy (Disabled for development - use npm run dev instead)
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: aura-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./devops/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./devops/nginx/conf.d:/etc/nginx/conf.d:ro
+  #     - ./frontend/.next:/usr/share/nginx/html:ro
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - aura_network
+
+  # pgAdmin (Database Management - Dev Only)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: aura-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@aurabeauty.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - aura_network
+    profiles:
+      - debug
+
+  # Redis Commander (Redis Management - Dev Only)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: aura-redis-commander
+    environment:
+      REDIS_HOSTS: local:cache:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - cache
+    networks:
+      - aura_network
+    profiles:
+      - debug
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  meilisearch_data:
+    driver: local
+
+networks:
+  aura_network:
+    driver: bridge
