@@ -1,0 +1,163 @@
+{
+  "products": [
+    {
+      "source": "amazon",
+      "asin": "B0BYR5R7ZY",
+      "name": "Cetaphil Daily Facial Cleanser",
+      "price": 7.99,
+      "rating": 4.7,
+      "reviews": 8234,
+      "category": "Face Wash",
+      "url": "https://amazon.com/dp/B0BYR5R7ZY",
+      "bestseller_rank": 3
+    },
+    {
+      "source": "amazon",
+      "asin": "B00CL1MBSY",
+      "name": "CeraVe Facial Moisturizing Lotion",
+      "price": 16.99,
+      "rating": 4.8,
+      "reviews": 12541,
+      "category": "Moisturizer",
+      "url": "https://amazon.com/dp/B00CL1MBSY",
+      "bestseller_rank": 1
+    },
+    {
+      "source": "amazon",
+      "asin": "B0BZNLYX2Y",
+      "name": "TARTE Shape Tape Concealer",
+      "price": 27.0,
+      "rating": 4.6,
+      "reviews": 5821,
+      "category": "Concealer",
+      "url": "https://amazon.com/dp/B0BZNLYX2Y",
+      "bestseller_rank": 8
+    },
+    {
+      "source": "amazon",
+      "asin": "B0BLVYKX62",
+      "name": "MAC Fix+ Makeup Setting Spray",
+      "price": 26.0,
+      "rating": 4.5,
+      "reviews": 4392,
+      "category": "Setting Spray",
+      "url": "https://amazon.com/dp/B0BLVYKX62",
+      "bestseller_rank": 12
+    },
+    {
+      "source": "amazon",
+      "asin": "B000JFXVNY",
+      "name": "Maybelline Lash Sensational Mascara",
+      "price": 7.98,
+      "rating": 4.4,
+      "reviews": 9876,
+      "category": "Mascara",
+      "url": "https://amazon.com/dp/B000JFXVNY",
+      "bestseller_rank": 5
+    },
+    {
+      "source": "amazon",
+      "asin": "B07BDGWW5N",
+      "name": "The Ordinary Niacinamide 10% + Zinc 1%",
+      "price": 5.9,
+      "rating": 4.3,
+      "reviews": 3421,
+      "category": "Serum",
+      "url": "https://amazon.com/dp/B07BDGWW5N",
+      "bestseller_rank": 2
+    },
+    {
+      "source": "aliexpress",
+      "product_id": "1005006425689",
+      "name": "Travel Makeup Bag Organizer",
+      "price": 9.99,
+      "supplier_rating": 4.8,
+      "orders": 15420,
+      "category": "Bags & Cases",
+      "url": "https://aliexpress.com/item/1005006425689.html",
+      "shipping_days": "15-20"
+    },
+    {
+      "source": "aliexpress",
+      "product_id": "1005007892345",
+      "name": "Cosmetic Brush Set 12pcs",
+      "price": 6.99,
+      "supplier_rating": 4.7,
+      "orders": 8932,
+      "category": "Brushes",
+      "url": "https://aliexpress.com/item/1005007892345.html",
+      "shipping_days": "12-18"
+    },
+    {
+      "source": "aliexpress",
+      "product_id": "1005008123456",
+      "name": "LED Makeup Mirror with Lights",
+      "price": 18.99,
+      "supplier_rating": 4.6,
+      "orders": 12340,
+      "category": "Mirrors",
+      "url": "https://aliexpress.com/item/1005008123456.html",
+      "shipping_days": "20-25"
+    },
+    {
+      "source": "aliexpress",
+      "product_id": "1005009567890",
+      "name": "Silicone Facial Cleansing Brush",
+      "price": 4.99,
+      "supplier_rating": 4.5,
+      "orders": 6234,
+      "category": "Cleansing Tools",
+      "url": "https://aliexpress.com/item/1005009567890.html",
+      "shipping_days": "10-15"
+    }
+  ],
+  "total_found": 10,
+  "sources": [
+    "amazon",
+    "aliexpress"
+  ],
+  "trends": {
+    "skincare": {
+      "trend_score": 92,
+      "growth": 18,
+      "monthly_searches": 2100000,
+      "related": [
+        "moisturizer",
+        "serum",
+        "cleanser"
+      ]
+    },
+    "makeup": {
+      "trend_score": 85,
+      "growth": 12,
+      "monthly_searches": 1800000,
+      "related": [
+        "foundation",
+        "lipstick",
+        "mascara"
+      ]
+    },
+    "hair care": {
+      "trend_score": 78,
+      "growth": 8,
+      "monthly_searches": 1200000,
+      "related": [
+        "shampoo",
+        "conditioner",
+        "hair mask"
+      ]
+    },
+    "cosmetic organizer": {
+      "trend_score": 72,
+      "growth": 24,
+      "monthly_searches": 450000,
+      "related": [
+        "makeup bag",
+        "storage",
+        "brush holder"
+      ]
+    }
+  },
+  "quality_score": 51.0,
+  "timestamp": "2026-08-04T17:43:46.435429"
+}
