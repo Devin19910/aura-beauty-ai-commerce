@@ -79,12 +79,53 @@ class MockSupplierAgent:
         }
 
 
+class MockValidationAgent:
+    """Mock Validation Agent for E2E testing"""
+
+    def execute(self, products_with_suppliers: List[Dict[str, Any]]) -> Dict[str, Any]:
+        validation_results = []
+        approved = 0
+        rejected = 0
+
+        for product_data in products_with_suppliers:
+            # Simple validation: approve products with good margins
+            for supplier in product_data.get("suppliers", [])[:1]:
+                price = product_data.get("retail_price", 0)
+                cost = supplier.get("unit_cost", 0)
+                margin = ((price - cost) / price * 100) if price > 0 else 0
+
+                is_approved = margin > 30  # Need >30% margin
+
+                if is_approved:
+                    approved += 1
+                else:
+                    rejected += 1
+
+                validation_results.append(
+                    {
+                        "product_name": product_data.get("product_name"),
+                        "approved": is_approved,
+                        "risk_score": 25 if is_approved else 65,
+                        "demand_confidence": 90 if is_approved else 60,
+                        "net_margin_pct": round(margin, 1),
+                    }
+                )
+
+        return {
+            "validation_results": validation_results,
+            "approved": approved,
+            "rejected": rejected,
+            "approval_rate": round((approved / max(approved + rejected, 1)) * 100, 1),
+        }
+
+
 class E2EPipelineOrchestrator:
-    """Orchestrates end-to-end pipeline: Research -> Supplier"""
+    """Orchestrates end-to-end pipeline: Research -> Supplier -> Validation"""
 
     def __init__(self):
         self.research_agent = MockResearchAgent()
         self.supplier_agent = MockSupplierAgent()
+        self.validation_agent = MockValidationAgent()
         self.pipeline_results = {}
 
     def run_pipeline(self) -> Dict[str, Any]:
@@ -107,13 +148,25 @@ class E2EPipelineOrchestrator:
             f"[OK] Found {supplier_results['total_suppliers']} suppliers for {supplier_results['total_products']} products"
         )
 
+        # Stage 3: Validation Agent
+        print("\n[STAGE 3] Running Validation Agent...")
+        validation_results = self.validation_agent.execute(
+            supplier_results["products_with_suppliers"]
+        )
+        print(
+            f"[OK] Validated {len(validation_results['validation_results'])} products (Approval rate: {validation_results['approval_rate']}%)"
+        )
+
         # Aggregate results
         self.pipeline_results = {
             "stage_1_research": research_results,
             "stage_2_supplier": supplier_results,
+            "stage_3_validation": validation_results,
             "pipeline_status": "success",
             "products_discovered": research_results["total_found"],
             "suppliers_found": supplier_results["total_suppliers"],
+            "products_approved": validation_results["approved"],
+            "approval_rate": validation_results["approval_rate"],
         }
 
         return self.pipeline_results
@@ -142,6 +195,7 @@ class E2EPipelineOrchestrator:
 
         research = self.pipeline_results["stage_1_research"]
         supplier = self.pipeline_results["stage_2_supplier"]
+        validation = self.pipeline_results["stage_3_validation"]
 
         print("[STAGE 1: PRODUCT DISCOVERY]")
         print(f"Products Found: {research['total_found']}")
@@ -173,6 +227,19 @@ class E2EPipelineOrchestrator:
 
             print()
 
+        print("[STAGE 3: PRODUCT VALIDATION]")
+        print(f"Products Validated: {len(validation['validation_results'])}")
+        print(f"Approved: {validation['approved']}")
+        print(f"Rejected: {validation['rejected']}")
+        print(f"Approval Rate: {validation['approval_rate']}%\n")
+
+        for result in validation["validation_results"]:
+            status = "[APPROVED]" if result["approved"] else "[REJECTED]"
+            print(
+                f"{status} {result['product_name']} - Risk: {result['risk_score']}/100 - Margin: {result['net_margin_pct']:.1f}%"
+            )
+        print()
+
         print("=" * 80)
         print("PIPELINE SUMMARY")
         print(f"Total Products Analyzed: {self.pipeline_results['products_discovered']}")
@@ -180,6 +247,8 @@ class E2EPipelineOrchestrator:
         print(
             f"Average Suppliers per Product: {self.pipeline_results['suppliers_found'] / self.pipeline_results['products_discovered']:.1f}"
         )
+        print(f"Products Approved: {self.pipeline_results['products_approved']}")
+        print(f"Approval Rate: {self.pipeline_results['approval_rate']}%")
         print(f"Pipeline Status: {self.pipeline_results['pipeline_status'].upper()}")
         print("=" * 80 + "\n")
 
@@ -208,6 +277,10 @@ def main():
         print(
             f"  - Stage 2 (Supplier): {orchestrator.pipeline_results['stage_2_supplier']['total_suppliers']} suppliers"
         )
+        print(
+            f"  - Stage 3 (Validation): {orchestrator.pipeline_results['products_approved']} approved"
+        )
+        print(f"  - Approval Rate: {orchestrator.pipeline_results['approval_rate']}%")
         print(f"  - Pipeline Status: OK\n")
 
         return True
