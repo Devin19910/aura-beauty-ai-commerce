@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from app.config import settings
 from app.database import init_db, get_db
 from app.api import router as api_router
+from app.api.endpoints.admin_claude import router as admin_claude_router
 from app.utils.logging import setup_logging
 
 # Setup logging
@@ -60,6 +61,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(admin_claude_router)
 
 
 @app.get("/health", tags=["Health"])
