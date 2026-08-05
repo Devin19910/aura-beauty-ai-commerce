@@ -3,7 +3,6 @@
   "outputDirectory": "frontend/.next",
   "devCommand": "cd frontend && npm run dev",
   "framework": "nextjs",
-  "nodeVersion": "18.x",
   "env": {
     "ANTHROPIC_API_KEY": {
       "description": "Claude API key for autonomous agents"
