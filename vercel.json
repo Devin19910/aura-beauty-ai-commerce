@@ -2,14 +2,5 @@
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/.next",
   "devCommand": "cd frontend && npm run dev",
-  "framework": "nextjs",
-  "env": {
-    "ANTHROPIC_API_KEY": {
-      "description": "Claude API key for autonomous agents"
-    },
-    "NEXT_PUBLIC_API_URL": {
-      "description": "Backend API URL",
-      "default": "https://api.aurabeauty.com"
-    }
-  }
+  "framework": "nextjs"
 }
