@@ -1,0 +1,14 @@
+backend/
+database/
+devops/
+docs/
+tests/
+ai-agents/
+.env.local
+.env.*.local
+.git
+.gitignore
+README.md
+CLAUDE.md
+docker-compose.yml
+**/*.md
